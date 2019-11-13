@@ -7,13 +7,14 @@ ifeq ($(UNAME), Darwin)
 	os=mac
 endif
 
+all: build run
 
 build:
-	./build.sh
+	./build-$(os).sh
 
 run:
-	./run-all-$(os).sh
+	./run-$(os).sh
 
-stop:
-	./stop-all.sh
+clean:
+	./stop-$(os).sh
 

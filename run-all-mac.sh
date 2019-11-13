@@ -1,1 +1,0 @@
-echo "Docker run"
