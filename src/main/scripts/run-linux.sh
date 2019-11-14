@@ -113,5 +113,5 @@ create_container_in_pod ${container_quarkus_jvm_name} ${container_quarkus_jvm_im
 create_container_in_pod ${container_spring_name} ${container_spring_image} ${container_spring_port} -e SPRING_HTTP_PORT=${container_spring_port} -e SPRING_DATASOURCE_URL=jdbc:postgresql://${psql_db_host}/${psql_db_name}
 
 echo "Displaying stats for containers: "
-podman stats --no-stream $(test "podman" = "podman" && echo "--no-reset") ${container_spring_image} ${container_quarkus_jvm_image} ${container_quarkus_native_image}
+podman stats --no-stream $(test "podman" = "podman" && echo "--no-reset") ${container_spring_name} ${container_quarkus_jvm_name} ${container_quarkus_native_name}
 
