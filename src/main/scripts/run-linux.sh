@@ -7,13 +7,13 @@ container_spring_name=spring-boot
 container_spring_port=8080
 container_spring_image=spring/todo
 
-container_quarkus_jvm_name=quarkus_jvm
+container_quarkus_jvm_name=quarkus-jvm
 container_quarkus_jvm_port=8081
-container_quarkus_jvm_image=quarkus_jvm/todo
+container_quarkus_jvm_image=quarkus-jvm/todo
 
-container_quarkus_native_name=quarkus_native
+container_quarkus_native_name=quarkus-native
 container_quarkus_native_port=8082
-container_quarkus_native_image=quarkus_native/todo
+container_quarkus_native_image=quarkus-native/todo
 
 container_cpu_limit=1
 container_memory_limit=500M
@@ -27,7 +27,7 @@ psql_db_password=todo
 ## Functions
 ############
 function create_database_container {
-  printf "Starting PostgreSQL in pod $1"
+  printf "Starting PostgreSQL in pod $1 "
   podman run --ulimit memlock=-1:-1 -d --rm=true --pod=$1-pod --memory-swappiness=0 --name $1-db -e POSTGRES_USER=${psql_db_user} -e POSTGRES_PASSWORD=${psql_db_password} -e POSTGRES_DB=${psql_db_name} postgres:10.5 > /dev/null
   # Waiting for the database to start
   while ! (podman exec -it $1-db psql -U ${psql_db_user} ${psql_db_name} -c "select 1" > /dev/null 2>&1)
