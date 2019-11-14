@@ -67,12 +67,12 @@ function create_container_in_pod {
   echo "image name:     ${image}"
   local port=$3
   echo "port name:      ${port}"
-  shift 4
+  shift 3
   local env="$*"
-  echo "params:         ${port}"
+  echo "params:         ${env}"
   
   printf "Starting Quarkus native container on port 8082 "
-  podman run -d --rm --cpus=1 --memory=1G --pod="${name}-pod" --name=${name} -e ${env} ${image} > /dev/null
+  podman run -d --rm --cpus=1 --memory=1G --pod="${name}-pod" --name=${name} ${env} ${image} > /dev/null
   while ! (curl -sf http://localhost:${port} > /dev/null)
   do
     sleep .2
