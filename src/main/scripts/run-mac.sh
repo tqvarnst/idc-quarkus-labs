@@ -67,14 +67,15 @@ docker exec -it postgresql psql -U todo todo-db -c "INSERT INTO todo(id, title, 
 echo "[DONE]"
 
 
-printf "Starting Spring Boot container on port 8080 "
-docker run -d --rm -p 8080:8080 --cpus=1 --memory=1G --network=demo-network --name=spring-boot -e SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql/todo-db spring/todo > /dev/null
-while ! (curl -sf http://localhost:8080 > /dev/null)
+printf "Starting Quarkus native container on port 8082 "
+docker run -d --rm -p 8082:8081 --cpus=1 --memory=1G --network=demo-network --name=quarkus-native -e QUARKUS_DATASOURCE_URL=jdbc:postgresql://postgresql/todo-db quarkus-native/todo > /dev/null
+while ! (curl -sf http://localhost:8082 > /dev/null)
 do
   sleep .2
   printf "."
 done
 echo "[DONE]"
+
 
 printf "Starting Quarkus JVM container on port 8081 "
 docker run -d --rm -p 8081:8081 --cpus=1 --memory=1G --network=demo-network --name=quarkus-jvm -e QUARKUS_DATASOURCE_URL=jdbc:postgresql://postgresql/todo-db quarkus-jvm/todo > /dev/null
@@ -85,15 +86,18 @@ do
 done
 echo "[DONE]"
 
-
-printf "Starting Quarkus native container on port 8082 "
-docker run -d --rm -p 8082:8081 --cpus=1 --memory=1G --network=demo-network --name=quarkus-native -e QUARKUS_DATASOURCE_URL=jdbc:postgresql://postgresql/todo-db quarkus-native/todo > /dev/null
-while ! (curl -sf http://localhost:8082 > /dev/null)
+printf "Starting Spring Boot container on port 8080 "
+docker run -d --rm -p 8080:8080 --cpus=1 --memory=1G --network=demo-network --name=spring-boot -e SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql/todo-db spring/todo > /dev/null
+while ! (curl -sf http://localhost:8080 > /dev/null)
 do
   sleep .2
   printf "."
 done
 echo "[DONE]"
+
+
+
+
 
 echo "Displaying stats for containers: "
 docker stats --no-stream spring-boot quarkus-jvm quarkus-native
