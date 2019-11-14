@@ -18,18 +18,12 @@ if [ ! -f "${GRAALVM_HOME}/bin/native-image" ]; then
   exit 2
 fi
 
-if docker --help > /dev/null 2>&1; then
-  container_runtime=$(which docker)
-fi
-
 if podman --help > /dev/null 2>&1; then
-  container_runtime=$(which podman)
-fi
-
-if [ -z "container_runtime" ]; then
-  echo "[ERROR]: You need to have either docker or podman installed to run this build script" >&2
+  echo "[ERROR]: You need to have podman installed to run this build script" >&2
   exit 3
 fi
+
+
 
 printf "Building java source code using maven " 
 ./mvnw clean package > /dev/null
@@ -37,14 +31,14 @@ echo "[DONE]"
 
 printf "Building Spring container image "
 pushd spring-lab1.1 > /dev/null
-${container_runtime} build -q -f src/main/docker/Dockerfile -t spring/hello . > /dev/null
+podman build -q -f src/main/docker/Dockerfile -t spring/hello . > /dev/null
 popd > /dev/null
 echo "[DONE]"
 
 
 printf "Building Quarkus JVM container image "
 pushd quarkus-lab1.1 > /dev/null
-${container_runtime} build -q -f src/main/docker/Dockerfile.jvm -t quarkus/hello-jvm . > /dev/null
+podman build -q -f src/main/docker/Dockerfile.jvm -t quarkus/hello-jvm . > /dev/null
 popd > /dev/null
 echo "[DONE]"
 
@@ -60,7 +54,7 @@ fi
 echo "[DONE]"
 
 printf "Building Quarkus native docker image"
-${container_runtime} build -q -f src/main/docker/Dockerfile.native -t quarkus/hello-native . > /dev/null
+podman build -q -f src/main/docker/Dockerfile.native -t quarkus/hello-native . > /dev/null
 echo "[DONE]"
 
 popd > /dev/null
