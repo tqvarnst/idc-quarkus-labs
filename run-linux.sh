@@ -80,7 +80,7 @@ create_database_container   quarkus-native
 prepopulate_database        quarkus-native
 
 printf "Starting Spring Boot container on port 8080 "
-podman run -d --rm --cpus=1 --memory=1G --pod="spring-boot-pod" --name=spring-boot spring/hello > /dev/null
+podman run -d --rm --cpus=1 --memory=1G --pod="spring-boot-pod" --name=spring-boot spring/todo > /dev/null
 while ! (curl -sf http://localhost:8080 > /dev/null)
 do
   sleep .2
@@ -89,7 +89,7 @@ done
 echo "[DONE]"
 
 printf "Starting Quarkus JVM container on port 8081 "
-podman run -d --rm --cpus=1 --memory=1G --pod="quarkus-jvm-pod" --name=quarkus-jvm -e QUARKUS_HTTP_PORT=8081 -e QUARKUS_DATASOURCE_URL=jdbc:postgresql://localhost/todo-db quarkus/hello-jvm > /dev/null
+podman run -d --rm --cpus=1 --memory=1G --pod="quarkus-jvm-pod" --name=quarkus-jvm -e QUARKUS_HTTP_PORT=8081 -e QUARKUS_DATASOURCE_URL=jdbc:postgresql://localhost/todo-db quarkus-jvm/todo > /dev/null
 while ! (curl -sf http://localhost:8081 > /dev/null)
 do
   sleep .2
@@ -99,7 +99,7 @@ echo "[DONE]"
 
 
 printf "Starting Quarkus native container on port 8082 "
-podman run -d --rm --cpus=1 --memory=1G --pod="quarkus-native-pod" --name=quarkus-native -e QUARKUS_HTTP_PORT=8082 -e QUARKUS_DATASOURCE_URL=jdbc:postgresql://localhost/todo-db quarkus/hello-native > /dev/null
+podman run -d --rm --cpus=1 --memory=1G --pod="quarkus-native-pod" --name=quarkus-native -e QUARKUS_HTTP_PORT=8082 -e QUARKUS_DATASOURCE_URL=jdbc:postgresql://localhost/todo-db quarkus-native/todo > /dev/null
 while ! (curl -sf http://localhost:8082 > /dev/null)
 do
   sleep .2
