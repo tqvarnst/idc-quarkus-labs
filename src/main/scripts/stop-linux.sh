@@ -7,8 +7,6 @@ trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
 # echo an error message before exiting
 trap 'echo "\"${last_command}\" command filed with exit code $?."' EXIT
 
-cd "$(dirname "$0")"
-
 function stop_pod {
   printf "Stopping and removing pod $1 \t" 
   podman pod stop $1-pod > /dev/null 2>&1 || true

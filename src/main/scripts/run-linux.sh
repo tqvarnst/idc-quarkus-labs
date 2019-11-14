@@ -7,8 +7,6 @@ trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
 # echo an error message before exiting
 trap 'echo "\"${last_command}\" command filed with exit code $?."' EXIT
 
-cd "$(dirname "$0")"
-
 function create_database_container {
   printf "Starting PostgreSQL in pod $1"
   podman run --ulimit memlock=-1:-1 -d --rm=true --pod=$1-pod --memory-swappiness=0 --name $1-db -e POSTGRES_USER=todo -e POSTGRES_PASSWORD=todo -e POSTGRES_DB=todo-db postgres:10.5 > /dev/null
@@ -49,12 +47,12 @@ function prepopulate_database {
   echo "[DONE]"
 }
 
-function stop_pod {
-  printf "Stopping and removing pod $1 \t" 
-  podman pod stop $1-pod > /dev/null 2>&1 || true
-  podman pod rm -f $1-pod > /dev/null 2>&1 || true 
-  echo "[DONE]"
-}
+# function stop_pod {
+#   printf "Stopping and removing pod $1 \t" 
+#   podman pod stop $1-pod > /dev/null 2>&1 || true
+#   podman pod rm -f $1-pod > /dev/null 2>&1 || true 
+#   echo "[DONE]"
+# }
 
 function create_pod {
   printf "Creating pod $1 using port $2 \t"
@@ -63,9 +61,9 @@ function create_pod {
 }
 
 
-stop_pod    spring-boot
-stop_pod    quarkus-jvm
-stop_pod    quarkus-native
+# stop_pod    spring-boot
+# stop_pod    quarkus-jvm
+# stop_pod    quarkus-native
 
 create_pod  spring-boot     8080
 create_pod  quarkus-jvm     8081

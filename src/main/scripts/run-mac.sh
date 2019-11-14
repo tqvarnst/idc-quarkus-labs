@@ -8,8 +8,6 @@ trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
 # echo an error message before exiting
 trap 'echo "\"${last_command}\" command filed with exit code $?."' EXIT
 
-cd "$(dirname "$0")"
-
 if docker --help > /dev/null 2>&1; then
   container_runtime=$(which docker)
 fi
@@ -18,15 +16,15 @@ if podman --help > /dev/null 2>&1; then
   container_runtime=$(which podman)
 fi
 
-printf "Stopping any running instances "
-docker stop spring-boot > /dev/null 2>&1 || true
-printf "."
-docker stop quarkus-jvm > /dev/null 2>&1 || true
-printf "."
-docker stop quarkus-native > /dev/null 2>&1 || true
-printf "."
-docker stop postgresql > /dev/null 2>&1 || true
-echo "[DONE]"
+# printf "Stopping any running instances "
+# docker stop spring-boot > /dev/null 2>&1 || true
+# printf "."
+# docker stop quarkus-jvm > /dev/null 2>&1 || true
+# printf "."
+# docker stop quarkus-native > /dev/null 2>&1 || true
+# printf "."
+# docker stop postgresql > /dev/null 2>&1 || true
+# echo "[DONE]"
 
 printf "Creating network for containers "
 docker network create demo-network > /dev/null 2>&1 || true
@@ -70,7 +68,7 @@ echo "[DONE]"
 
 
 printf "Starting Spring Boot container on port 8080 "
-docker run -d --rm -p 8080:8080 --cpus=1 --memory=1G --network=demo-network --name=spring-boot -e SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql/todo-db spring/hello > /dev/null
+docker run -d --rm -p 8080:8080 --cpus=1 --memory=1G --network=demo-network --name=spring-boot -e SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql/todo-db spring/todo > /dev/null
 while ! (curl -sf http://localhost:8080 > /dev/null)
 do
   sleep .2
@@ -79,7 +77,7 @@ done
 echo "[DONE]"
 
 printf "Starting Quarkus JVM container on port 8081 "
-docker run -d --rm -p 8081:8081 --cpus=1 --memory=1G --network=demo-network --name=quarkus-jvm -e QUARKUS_DATASOURCE_URL=jdbc:postgresql://postgresql/todo-db quarkus/hello-jvm > /dev/null
+docker run -d --rm -p 8081:8081 --cpus=1 --memory=1G --network=demo-network --name=quarkus-jvm -e QUARKUS_DATASOURCE_URL=jdbc:postgresql://postgresql/todo-db quarkus-jvm/todo > /dev/null
 while ! (curl -sf http://localhost:8081 > /dev/null)
 do
   sleep .2
@@ -89,7 +87,7 @@ echo "[DONE]"
 
 
 printf "Starting Quarkus native container on port 8082 "
-docker run -d --rm -p 8082:8081 --cpus=1 --memory=1G --network=demo-network --name=quarkus-native -e QUARKUS_DATASOURCE_URL=jdbc:postgresql://postgresql/todo-db quarkus/hello-native > /dev/null
+docker run -d --rm -p 8082:8081 --cpus=1 --memory=1G --network=demo-network --name=quarkus-native -e QUARKUS_DATASOURCE_URL=jdbc:postgresql://postgresql/todo-db quarkus-native/todo > /dev/null
 while ! (curl -sf http://localhost:8082 > /dev/null)
 do
   sleep .2
