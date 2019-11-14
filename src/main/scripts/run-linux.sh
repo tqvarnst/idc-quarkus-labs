@@ -61,14 +61,14 @@ function create_pod {
 }
 
 function create_container_in_pod {
-  let name=$1
+  local name=$1
   echo "container name: ${name}"
-  let image=$2
+  local image=$2
   echo "image name:     ${image}"
-  let port=$3
+  local port=$3
   echo "port name:      ${port}"
-  shift 3
-  let env=$*
+  shift 4
+  local env="$*"
   echo "params:         ${port}"
   
   printf "Starting Quarkus native container on port 8082 "
