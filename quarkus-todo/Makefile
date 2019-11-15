@@ -35,7 +35,7 @@ build-native-linux: target/todo-runner
 
 target/todo-runner:
 ifeq ($(os),linux)
-	./mvnw package -Pnative -Dquarkus.profile=native
+	./mvnw package -Pnative -Dquarkus.profile=native -Dquarkus.native.container-runtime=podman
 else
 	./mvnw package -Pnative -Dquarkus.native.container-build=true -Dquarkus.profile=native
 endif
