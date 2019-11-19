@@ -1,5 +1,6 @@
 package com.example;
 
+import lombok.Lombok;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,7 +20,7 @@ public class TodoController {
 
     @GetMapping
     public Iterable<Todo> findAll() {
-        return todoRepository.findAll();
+        return todoRepository.findAllByOrderByOrder();
     }
 
     @PatchMapping("/{id}")

@@ -27,6 +27,7 @@ public class TodoResource {
         entity.order = todo.order;
         entity.title = todo.title;
         entity.url = todo.url;
+        entity.categories = todo.categories;
         return Response.ok(entity).build();
     }
 
@@ -37,6 +38,7 @@ public class TodoResource {
         return Response.status(Response.Status.CREATED).entity(item).build();
     }
 
+
     @DELETE
     @Path("/{id}")
     @Transactional
@@ -45,4 +47,6 @@ public class TodoResource {
         entity.delete();
         return Response.noContent().build();
     }
+
+
 }
