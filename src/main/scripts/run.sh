@@ -85,7 +85,7 @@ function create_container {
   printf "Starting ${image} container using port ${port} "
    
   ${container_runtime} run -d --rm --cpus=${container_cpu_limit} --memory=${container_memory_limit} -p ${port}:${port} --network=${container_network_name} --name=${name} ${env} ${image} > /dev/null
-  while ! (curl -sf http://localhost:${port} > /dev/null)
+  while ! (curl -sf http://localhost:${port}/api > /dev/null)
   do
     sleep .2
     printf "."
