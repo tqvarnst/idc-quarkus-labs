@@ -7,7 +7,7 @@ ifeq ($(UNAME), Darwin)
 	os=mac
 endif
 
-.PHONY: all spring quarkus-jvm quarkus-native build run clean stop
+.PHONY: all spring quarkus-jvm quarkus-native build run run-lab clean stop
 
 all: build run
 
@@ -24,6 +24,9 @@ quarkus-native:
 
 run: stop
 	./src/main/scripts/run.sh
+
+run-lab: stop
+	./src/main/scripts/run-lab.sh
 
 clean: clean-quarkus clean-spring
 
