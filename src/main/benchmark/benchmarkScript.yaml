@@ -1,0 +1,279 @@
+name: REST CRUD performance benchmark
+scripts:
+
+  upload-start-hyperfoil:
+    - sh: cd ${{IDC_LAB_BASE_DIR:/tmp}}
+    - sh: mkdir ${{HYPERFOIL_DIR}}
+    - sh: cd ${{HYPERFOIL_DIR}}
+    - upload: ${{ENV.SCRIPT_DIR}}/assets/${{HYPERFOIL_ARCHIVE}}.zip ${{IDC_LAB_BASE_DIR:/tmp}}/${{HYPERFOIL_DIR}}
+    - sh: unzip -o ${{HYPERFOIL_ARCHIVE}}.zip
+    - sh: cd ${{HYPERFOIL_ARCHIVE}}/bin
+    - sh: nohup ./standalone.sh > /tmp/hyperfoil.out &
+    - queue-download: /tmp/hyperfoil.out
+    - sh: HYPERFOIL_PID=$(ps -AF | grep [i]o.hyperfoil.standalone | awk '{print $2}')
+    - sh: echo $HYPERFOIL_PID
+      then:
+        - set-state: RUN.HYPERFOIL_PID
+    - sh: bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' http://${{HYPERFOIL_HOST}}:8090/)" != "200" ]]; do sleep 1; done' #curl hyperfoil endpoint until it is up
+    - signal: HYPERFOIL_UPLOAD_DONE
+
+  take-down-hyperfoil:
+    - sh: kill -15 ${{HYPERFOIL_PID}}
+
+  build-tests:
+    - sh: if [ -d "${{IDC_LAB_BASE_DIR:/tmp}}/${{DEMO_APP_DIR}}" ]; then rm -Rf ${{IDC_LAB_BASE_DIR:/tmp}}/${{DEMO_APP_DIR}}; fi
+    - sh: cd ${{IDC_LAB_BASE_DIR:/tmp}}
+    - sh: mkdir ${{DEMO_APP_DIR}}
+    - sh: cd ${{DEMO_APP_DIR}}
+    - sh: git clone ${{DEMO_APP_GIT_REPO}}
+    - sh: basename ${{DEMO_APP_GIT_REPO}} .git
+    - set-state: RUN.IDC_APP_DIR
+    - sh: cd ${{DEMO_APP_DIR}}
+    - sh: git checkout -t origin/${{DEMO_APP_GIT_BRANCH}}
+    # - sh: ${{BUILD_COMMAND}}
+    - signal: DEMO_APP_BUILD_DONE
+
+  restart-pods:
+    - sh: cd ${{IDC_LAB_BASE_DIR:/tmp}}/${{DEMO_APP_DIR}}/${{IDC_APP_DIR}}
+    - for-each: TARGET ${{TARGETS}}
+      then:
+        - for-each: DRIVER_THREAD ${{DRIVER_THREADS}}
+          then:
+            - set-signal: ${{TARGET.name}}-${{DRIVER_THREAD.count}}-POD-RESTART 1
+            - set-signal: ${{TARGET.name}}-${{DRIVER_THREAD.count}}-POD-RESTART-DONE 1
+            - wait-for: ${{TARGET.name}}-${{DRIVER_THREAD.count}}-POD-RESTART
+            # - sh: ${{POD_RESTART_COMMAND}}
+            - signal: ${{TARGET.name}}-${{DRIVER_THREAD.count}}-POD-RESTART-DONE
+
+  take-down-pods:
+    - sh: cd ${{IDC_LAB_BASE_DIR:/tmp}}/${{DEMO_APP_DIR}}/${{IDC_APP_DIR}}
+    - sh: ${{STOP_POD_COMMAND}}
+
+  create-benchmark-definitions:
+    - sh: cd ${{IDC_LAB_BASE_DIR:/tmp}}
+    - sh: mkdir -p client/benchmark
+    - sh: cd client/benchmark
+    - queue-download: ${{IDC_LAB_BASE_DIR:/tmp}}/client/benchmark
+    - sh: rm -Rf ./*.json
+    - upload: ${{ENV.SCRIPT_DIR}}/assets/${{BENCHMARK_TEMPLATE}} ${{IDC_LAB_BASE_DIR:/tmp}}/client/benchmark
+    # - wait-for: HYPERFOIL_UPLOAD_DONE
+    - for-each: TARGET ${{TARGETS}}
+      then:
+        - for-each: DRIVER_THREAD ${{DRIVER_THREADS}}
+          then:
+            - sh: cp -f ${{BENCHMARK_TEMPLATE}} ${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}.json
+              then:
+                - regex: cannot stat
+                  then:
+                    - abort: can not copy ${{BENCHMARK_TEMPLATE}}
+            - sh: sed -i 's/{RUNTIME}/${{TARGET.name}}/g' ${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}.json
+            - sh: sed -i 's/{DRIVER_THREADS}/${{DRIVER_THREAD.count}}/g' ${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}.json
+            - sh: sed -i 's/{HOST}/${{APP_SERVER}}/g' ${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}.json
+            - sh: sed -i 's/{PORT}/${{TARGET.port}}/g' ${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}.json
+            - sh: sed -i 's/{RAMP_UP_DURATION}/${{RAMP_UP_DURATION}}/g' ${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}.json
+            - sh: sed -i 's/{STEADY_STATE_DURATION}/${{STEADY_STATE_DURATION}}/g' ${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}.json
+            - sh: sed -i 's/{PAUSE}/${{BENCHMARK_THINK_TIME}}/g' ${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}.json
+            - sh: sed -i 's/{SHARED_CONNECTIONS}/${{DRIVER_THREAD.sharedConnections}}/g' ${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}.json
+            - sh: "curl -X POST --header 'Content-Type: application/json'  -d @${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}.json http://${{HYPERFOIL_HOST}}:8090/benchmark"
+              then:
+                - regex: Internal Server Error
+                  then:
+                    - abort: Failed to upload benchmark definition
+                - regex: Failed to connect
+                  then:
+                    - abort: Failed to upload benchmark definition
+                - regex: Cannot read benchmark
+                  then:
+                    - abort: Failed to upload benchmark definition
+    - signal: BENCHMARK_DEFINITIONS_DONE
+
+  upload-report-generator:
+    - sh: cd ${{IDC_LAB_BASE_DIR:/tmp}}
+    - upload: ${{ENV.SCRIPT_DIR}}/assets/hyperfoilReportGenerator.jar ${{IDC_LAB_BASE_DIR:/tmp}}
+
+  run-benchmarks:
+    - sh: cd ${{IDC_LAB_BASE_DIR:/tmp}}
+    - sh: mkdir -p client/runs
+    - sh: cd client/runs
+    - sh: rm -Rf ./*
+    # - queue-download: ${{IDC_LAB_BASE_DIR:/tmp}}/client/runs
+    - for-each: TARGET ${{TARGETS}}
+      then:
+        - set-state: VALUES ''
+        - for-each: DRIVER_THREAD ${{DRIVER_THREADS}}
+          then:
+            - set-signal: ${{TARGET.name}}-${{DRIVER_THREAD.count}}-RUN_DONE 1
+            - set-signal: ${{TARGET.name}}-${{DRIVER_THREAD.count}}-STATS_DONE 1
+            - signal: ${{TARGET.name}}-${{DRIVER_THREAD.count}}-POD-RESTART
+            # - wait-for: ${{TARGET.name}}-${{DRIVER_THREAD.count}}-POD-RESTART-DONE
+            - signal: ${{TARGET.name}}-${{DRIVER_THREAD.count}}-STARTED
+            - sh: curl http://localhost:8090/benchmark/${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}/start
+              then:
+                - regex: .*run ID (?<runid>(([0-9]|[A-F])*))
+                - set-state: RUN.RUN_ID ${{runid}}
+            - sh: while [[ $(curl -s http://localhost:8090/run/${{RUN_ID}} | jq -r '.agents[0].status') != "STOPPED" ]]; do sleep 5; done
+            - signal: ${{TARGET.name}}-${{DRIVER_THREAD.count}}-DONE
+            - sh: mkdir ${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}
+            - queue-download: ${{IDC_LAB_BASE_DIR:/tmp}}/client/runs/${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}
+            - sh: cp -f ${{HYPERFOIL_RUN_DIR:/tmp/hyperfoil}}/run/${{RUN_ID}}/all.json ${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}/
+              then:
+                - regex: cannot stat
+                  then:
+                    - abort: "can not find file: ${{HYPERFOIL_RUN_DIR:/tmp/hyperfoil}}/run/${{RUN_ID}}/all.json"
+            - sh: jq ' .total[] | select (.phase | contains("steadyState")) | .summary.responseCount / (.end - .start ) * 1000 ' < ${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}/all.json
+            - set-state: RUN.${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_TROUGHPUT
+            - set-state:
+                key: VALUES
+                value: ${{VALUES}}<value metricComparator="HB" metricName="Throughput" result="${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_TROUGHPUT}}"><parameters><parameter name="DRIVER_THREADS" value="${{DRIVER_THREAD.count}}"/></parameters></value>
+                silent: true
+            - sh: jq ' .total[] | select (.phase | contains("steadyState")) | .summary.invalid ' < ${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}/all.json
+            - set-state: RUN.${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_INVALID
+            - set-state:
+                key: VALUES
+                value: ${{VALUES}}<value metricComparator="LB" metricName="Invalid_count" result="${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_INVALID}}"><parameters><parameter name="DRIVER_THREADS" value="${{DRIVER_THREAD.count}}"/></parameters></value>
+                silent: true
+            - sh: jq ' .total[] | select (.phase | contains("steadyState")) | .summary.resetCount ' < ${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}/all.json
+            - set-state: RUN.${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_RESET_COUNT
+            - set-state:
+                key: VALUES
+                value: ${{VALUES}}<value metricComparator="LB" metricName="Resets" result="${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_RESET_COUNT}}"><parameters><parameter name="DRIVER_THREADS" value="${{DRIVER_THREAD.count}}"/></parameters></value>
+                silent: true
+            - sh: jq ' .total[] | select (.phase | contains("steadyState")) | .summary.timeouts ' < ${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}/all.json
+            - set-state: RUN.${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_TIMEOUTS
+            - set-state:
+                key: VALUES
+                value: ${{VALUES}}<value metricComparator="LB" metricName="Timeouts" result="${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_TIMEOUTS}}"><parameters><parameter name="DRIVER_THREADS" value="${{DRIVER_THREAD.count}}"/></parameters></value>
+                silent: true
+            - sh: jq ' .total[] | select (.phase | contains("steadyState")) | .summary.blockedCount ' < ${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}/all.json
+            - set-state: RUN.${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_BLOCKED_COUNT
+            - set-state:
+                key: VALUES
+                value: ${{VALUES}}<value metricComparator="LB" metricName="Blocked_count" result="${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_BLOCKED_COUNT}}"><parameters><parameter name="DRIVER_THREADS" value="${{DRIVER_THREAD.count}}"/></parameters></value>
+                silent: true
+            - sh: jq ' .total[] | select (.phase | contains("steadyState")) | .summary.meanResponseTime / 1000000' < ${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}/all.json
+            - set-state: RUN.${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_MEAN_RESPONSE
+            - set-state:
+                key: VALUES
+                value: ${{VALUES}}<value metricComparator="LB" metricName="Response_time_mean" result="${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_MEAN_RESPONSE}}"><parameters><parameter name="DRIVER_THREADS" value="${{DRIVER_THREAD.count}}"/></parameters></value>
+                silent: true
+            - sh: jq ' .total[] | select (.phase | contains("steadyState")) | .summary.percentileResponseTime."99.99" / 1000000 ' < ${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}/all.json
+            - set-state: RUN.${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_99_99_RESPONSE
+            - set-state:
+                key: VALUES
+                value: ${{VALUES}}<value metricComparator="LB" metricName="Response_time_9999" result="${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_99_99_RESPONSE}}"><parameters><parameter name="DRIVER_THREADS" value="${{DRIVER_THREAD.count}}"/></parameters></value>
+                silent: true
+            - sh: java -jar ${{IDC_LAB_BASE_DIR:/tmp}}/hyperfoilReportGenerator.jar -s ${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}} -d ${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}/index.html
+            - signal: ${{TARGET.name}}-${{DRIVER_THREAD.count}}-RUN_DONE
+            - wait-for: ${{TARGET.name}}-${{DRIVER_THREAD.count}}-STATS_DONE
+            - set-state:
+                key: VALUES
+                value: ${{VALUES}}<value metricComparator="LB" metricName="RSS_mean" result="${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_MEAN_RSS}}"><parameters><parameter name="DRIVER_THREADS" value="${{DRIVER_THREAD.count}}"/></parameters></value>
+                silent: true
+            - set-state:
+                key: VALUES
+                value: ${{VALUES}}<value metricComparator="LB" metricName="RSS_max" result="${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_MAX_RSS}}"><parameters><parameter name="DRIVER_THREADS" value="${{DRIVER_THREAD.count}}"/></parameters></value>
+                silent: true
+            - sh: rq_sec=$(echo "scale=5; ${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_TROUGHPUT}} / ${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_MAX_RSS}}" | bc -l); echo $rq_sec
+              then:
+                - set-state: ${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_REQ_SEC_MB
+            - set-state:
+                key: VALUES
+                value: ${{VALUES}}<value metricComparator="LB" metricName="Req_Sec_Mb" result="${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_REQ_SEC_MB}}"><parameters><parameter name="DRIVER_THREADS" value="${{DRIVER_THREAD.count}}"/></parameters></value>
+                silent: true
+        - sh: date +%FT%TZ
+          then:
+            - set-state: RUN.TIMESTAMP
+        - sh: >
+            curl -H "Content-Type: text/xml"
+            -H "Authorization: Basic $(echo -n perfrepouser:perfrepouser1. | base64)"
+            -d '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            <testExecution name="${{RUND_ID}}-${{TARGET.name}}" started="${{RUN.TIMESTAMP}}" testId="5" testUid="idc_quarkus_lab">
+            <parameters/>
+            <tags><tag name="${{RUND_ID}}"/><tag name="${{TARGET.name}}"/><tag name="idc"/><tag name="${{BENCHMARK_NAME}}"/><tag name="cpu4"/></tags>
+            <values>${{VALUES}}</values>
+            </testExecution>'
+            http://benchserver1.perf.lab.eng.rdu2.redhat.com:8090/rest/testExecution/create
+    - signal: BENCHMARKS_DONE
+
+
+  gather-podman-stats:
+    - sh: cd ${{PODMAN_STATS_BASE_DIR:/tmp}}
+    - sh: mkdir podmanStats
+    - sh: cd podmanStats
+    - for-each: TARGET ${{TARGETS}}
+      then:
+        - for-each: DRIVER_THREAD ${{DRIVER_THREADS}}
+          then:
+            - set-signal: ${{TARGET.name}}-${{DRIVER_THREAD.count}}-STARTED 1
+            - wait-for: ${{TARGET.name}}-${{DRIVER_THREAD.count}}-STARTED
+            - sh: podman stats ${{TARGET.name}} >  ${{TARGET.name}}-${{DRIVER_THREAD.count}}.stats &
+            - sh: STATS_PID=$!
+            - wait-for: ${{TARGET.name}}-${{DRIVER_THREAD.count}}-RUN_DONE
+            - sh: grep "^[^ID]" ${{TARGET.name}}-${{DRIVER_THREAD.count}}.stats | awk '{print $4}' | sed 's/MB//' | grep "^[^--]" | awk 'n <$0 {n=$0}END{print n}' #find max rss from podman stats
+            - set-state: RUN.${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_MAX_RSS
+            - sh: grep "^[^ID]" ${{TARGET.name}}-${{DRIVER_THREAD.count}}.stats | awk '{print $4}' | sed 's/MB//' | grep "^[^--]" | awk '{n=n+$0; count++}END{print n /count}' # calc mean rss from podman stats
+            - set-state: RUN.${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_MEAN_RSS
+            - sh: kill -15 $STATS_PID
+            - signal: ${{TARGET.name}}-${{DRIVER_THREAD.count}}-STATS_DONE
+
+
+hosts:
+  client: root@benchclient1.perf.lab.eng.rdu2.redhat.com:22
+  server: root@benchserver2.perf.lab.eng.rdu2.redhat.com:22
+
+roles:
+  client:
+    hosts: [client]
+    setup-scripts:
+      - upload-start-hyperfoil:
+          with:
+            HYPERFOIL_HOST: localhost
+      - upload-report-generator
+      - create-benchmark-definitions:
+          with:
+            HYPERFOIL_HOST: localhost
+    run-scripts:
+      - run-benchmarks
+    cleanup-scripts:
+      - take-down-hyperfoil
+
+  server:
+    hosts: [server]
+    # setup-scripts:
+    #   - build-tests
+    run-scripts:
+      # - restart-pods
+      - gather-podman-stats
+    cleanup-scripts:
+      - take-down-pods
+
+states:
+
+  RUND_ID: 0
+
+  BENCHMARK_NAME: todo
+
+  HYPERFOIL_RELEASE_API_URL: https://api.github.com/repos/Hyperfoil/Hyperfoil/releases/latest
+  HYPERFOIL_DIR: hyperfoil-ldc
+  HYPERFOIL_ARCHIVE: hyperfoil-0.6-SNAPSHOT
+
+  DEMO_APP_DIR: demo-app
+  DEMO_APP_GIT_REPO: https://github.com/johnaohara/idc-quarkus-labs.git
+  DEMO_APP_GIT_BRANCH: master
+  BUILD_COMMAND: make clean build
+  STOP_POD_COMMAND: make stop
+  POD_RESTART_COMMAND: make stop run
+
+  BENCHMARK_TEMPLATE: ${{BENCHMARK_NAME}}.template.json
+  RAMP_UP_DURATION: 1s
+  STEADY_STATE_DURATION: 30s
+  BENCHMARK_THINK_TIME: 100ms
+
+  APP_SERVER: benchserver2G1
+  HYPERFOIL_HOST: benchclient1
+
+  TARGETS: [{name: "quarkus-jvm", port: 8081},{name: "quarkus-native", port: 8082}, {name: "spring-boot", port: 8080}]
+  DRIVER_THREADS: [{count: 2, sharedConnections: 100},{count: 4, sharedConnections: 200},{count: 6, sharedConnections: 300},{count: 8, sharedConnections: 400},{count: 10, sharedConnections: 600},{count: 12, sharedConnections: 600},{count: 14, sharedConnections: 700}]
+
+  Xmx: 64mb
+
