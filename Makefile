@@ -36,6 +36,12 @@ clean-spring:
 stop: 
 	src/main/scripts/stop.sh
 
+oc-setup: 
+	src/main/scripts/oc-setup.sh
+
+oc-clean: 
+	src/main/scripts/oc-clean.sh
+
 rsync:
 	git ls-files --exclude-standard -oi --directory > .rsync_ignore
 	rsync -a --exclude=".git" --exclude-from=".rsync_ignore" --delete . root@hpc-dl360a-02.mw.lab.eng.bos.redhat.com:demo/idc-quarkus-labs
