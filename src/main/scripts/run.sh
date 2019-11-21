@@ -29,20 +29,11 @@ container_quarkus_native_port=8082
 container_quarkus_native_image=quarkus-native/todo
 
 container_cpu_limit=4
-container_memory_limit=256M
+container_memory_limit=512M
 
 psql_db_name=todo-db
 psql_db_user=todo
 psql_db_password=todo
-
-if [ $# -eq 1 ]
-  then
-    psql_db_host=$1
-    lab=true
-else
-    psql_db_host=localhost
-    lab=false
-fi
 
 echo "Using database: $psql_db_host"
 
@@ -51,6 +42,17 @@ if [ "$(uname)" == "Darwin" ]; then
   container_stats_extra_settings=""
   container_network_name=idc_demo_network
   psql_db_host=${container_db_name}
+fi
+
+if [ $# -eq 1 ]
+  then
+    psql_db_host=$1
+    network_config="--network=${container_network_name}"
+    lab=true
+else
+    psql_db_host=localhost
+    network_config="--network=${container_network_name} -p 5432:5432"
+    lab=false
 fi
 
 ############
@@ -64,7 +66,7 @@ function run_database_script {
 
 function create_database_container {
   printf "Starting PostgreSQL with name ${container_db_name} "
-  ${container_runtime} run --ulimit memlock=-1:-1 -d --rm=true --network=${container_network_name} -p 5432:5432 --memory-swappiness=0 --name ${container_db_name} -e POSTGRES_USER=${psql_db_user} -e POSTGRES_PASSWORD=${psql_db_password} -e POSTGRES_DB=${psql_db_name} postgres:10.5 > /dev/null
+  ${container_runtime} run --ulimit memlock=-1:-1 -d --rm=true ${network_config} --memory-swappiness=0 --name ${container_db_name} -e POSTGRES_USER=${psql_db_user} -e POSTGRES_PASSWORD=${psql_db_password} -e POSTGRES_DB=${psql_db_name} postgres:10.5 > /dev/null
   # Waiting for the database to start
   while ! (${container_runtime} exec -it ${container_db_name} psql -U ${psql_db_user} ${psql_db_name} -c "select 1" > /dev/null 2>&1)
   do

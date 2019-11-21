@@ -20,7 +20,7 @@ public class Todo extends PanacheEntity {
 
     public String url;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name="user_id")
     public User user;
 

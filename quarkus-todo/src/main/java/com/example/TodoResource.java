@@ -15,6 +15,12 @@ public class TodoResource {
 
     @GET
     public List<Todo> getAll() {
+        return Todo.listAll();
+    }
+
+    @GET
+    @Path("/sorted")
+    public List<Todo> getAllSorted() {
         return Todo.listAll(Sort.by("order"));
     }
 

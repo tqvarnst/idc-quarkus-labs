@@ -15,7 +15,7 @@
 #
 ###
 FROM fabric8/java-alpine-openjdk8-jre
-ENV JAVA_OPTIONS="-Dquarkus.http.host=0.0.0.0 -Dquarkus.profile=java -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
+ENV JAVA_OPTIONS="-Xmx64m -Dquarkus.http.host=0.0.0.0 -Dquarkus.profile=java -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
 ENV AB_OFF=true
 COPY target/lib/* /deployments/lib/
 COPY target/*-runner.jar /deployments/app.jar
