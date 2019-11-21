@@ -107,13 +107,24 @@ function start-todo-app {
   local namespace=$1
   shift
   local env="$*"
-  printf "Starting todo app on namespace ${namespace}"
+  
   oc new-app todo:latest -n ${namespace} ${env} > /dev/null
   
   sleep 1
   oc expose svc todo -n ${namespace} > /dev/null
   sleep 1
   
+}
+
+fuction scale-todo-app {
+  local namespace=$1
+  local size=$2
+  oc scale --replicas=${size} dc todo -n ${namespace} > /dev/null
+}
+
+function check_availability_todo {
+  local namespace=$1
+  echo "Pinging the todo app on namespace ${namespace}"
   local route=$(oc get route todo -n ${namespace} -o jsonpath='{.spec.host}') 
   while ! (curl -sf ${route} > /dev/null)
   do
@@ -121,10 +132,7 @@ function start-todo-app {
     printf "."
   done
   echo "[DONE]"
-  
 }
-
-
 
 verify_oc_cli
 check_authenticated
@@ -151,6 +159,11 @@ tag_and_upload_image ${quarkus_native_local_image_name} "${REGISTRY_ROUTE}/${qua
 start-todo-app ${spring_project} -e SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql/todo-db -e SPRING_HTTP_PORT=8080
 start-todo-app ${quarkus_jvm_project} -e QUARKUS_DATASOURCE_URL=jdbc:postgresql://postgresql/todo-db -e QUARKUS_HTTP_PORT=8080
 start-todo-app ${quarkus_native_project} -e QUARKUS_DATASOURCE_URL=jdbc:postgresql://postgresql/todo-db -e QUARKUS_HTTP_PORT=8080
+
+scale-todo-app ${spring_project} 10
+scale-todo-app ${quarkus_jvm_project} 10
+scale-todo-app ${quarkus_native_project} 10
+
 
 
 # Expose the registry 
