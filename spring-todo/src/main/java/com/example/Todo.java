@@ -34,7 +34,7 @@ public class Todo {
     @Getter @Setter
     private String url;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name="user_id")
     public User user;
 
