@@ -3,7 +3,7 @@ INSERT INTO Category(id,name) VALUES (nextval('hibernate_sequence'), 'Private');
 INSERT INTO Category(id,name) VALUES (nextval('hibernate_sequence'), 'Family');
 
 INSERT INTO Todo_User(id,firstname,surname,email) VALUES (nextval('hibernate_sequence'), 'Thomas','Qvarnstrom','no-reply@redhat.com');
-INSERT INTO Todo_User(id,firstname,surname,email) VALUES (nextval('hibernate_sequence'), 'John','OHare','no-reply@redhat.com');
+INSERT INTO Todo_User(id,firstname,surname,email) VALUES (nextval('hibernate_sequence'), 'John','OHara','no-reply@redhat.com');
 
 INSERT INTO Todo(id, title, completed, ordering, user_id, url) VALUES (nextval('hibernate_sequence'), 'Introduction to Quarkus', true, 0, 4, null);
 INSERT INTO Todo(id, title, completed, ordering, user_id, url) VALUES (nextval('hibernate_sequence'), 'Write Evaluation Plan', true, 1, 4, null);
