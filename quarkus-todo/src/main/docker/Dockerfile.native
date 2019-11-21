@@ -20,4 +20,4 @@ COPY target/*-runner /work/application
 #RUN microdnf update && microdnf install procps
 RUN chmod 775 /work 
 EXPOSE 8080
-CMD ["./application", "-Dquarkus.http.host=0.0.0.0","-Xms2m","-Xmx10m","-Xmn10m"]
+CMD ["./application", "-Dquarkus.http.host=0.0.0.0","-Xms32m","-Xmx64m","-Xmn32m"]
