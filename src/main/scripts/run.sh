@@ -32,9 +32,19 @@ container_cpu_limit=4
 container_memory_limit=256M
 
 psql_db_name=todo-db
-psql_db_host=localhost
 psql_db_user=todo
 psql_db_password=todo
+
+if [ $# -eq 1 ]
+  then
+    psql_db_host=$1
+    lab=true
+else
+    psql_db_host=localhost
+    lab=false
+fi
+
+echo "Using database: $psql_db_host"
 
 if [ "$(uname)" == "Darwin" ]; then
   container_runtime=docker
@@ -83,8 +93,13 @@ function create_container {
   local env="$*"
  
   printf "Starting ${image} container using port ${port} "
-   
-  ${container_runtime} run -d --rm --cpus=${container_cpu_limit} --memory=${container_memory_limit} -p ${port}:${port} --network=${container_network_name} --name=${name} ${env} ${image} > /dev/null
+
+  if [ "$lab" = true ] ; then
+    ${container_runtime} run -d --rm --cpus=${container_cpu_limit} --memory=${container_memory_limit} --network=host --name=${name} ${env} ${image} > /dev/null
+  else
+    ${container_runtime} run -d --rm --cpus=${container_cpu_limit} --memory=${container_memory_limit} -p ${port}:${port} --network=${container_network_name} --name=${name} ${env} ${image} > /dev/null
+  fi
+
   while ! (curl -sf http://localhost:${port}/api > /dev/null)
   do
     sleep .2
@@ -101,8 +116,10 @@ printf "Creating network for containers "
 ${container_runtime} network create ${container_network_name} > /dev/null 2>&1 || true
 echo "[DONE]"
 
-create_database_container   ${container_db_name}
-prepopulate_database        ${container_db_name}
+if [ "$lab" != true ] ; then
+  create_database_container   ${container_db_name}
+  prepopulate_database        ${container_db_name}
+fi
 
 # Starting the cloud native runtime and wait for first response
 create_container ${container_spring_name} ${container_spring_image} ${container_spring_port} -e SPRING_HTTP_PORT=${container_spring_port} -e SPRING_DATASOURCE_URL=jdbc:postgresql://${psql_db_host}/${psql_db_name}

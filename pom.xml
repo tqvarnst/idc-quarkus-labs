@@ -9,7 +9,7 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>quarkus-lab1.1</module>
-        <module>spring-lab1.1</module>
+        <module>quarkus-todo</module>
+        <module>spring-todo</module>
     </modules>
 </project>
