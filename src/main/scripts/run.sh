@@ -31,6 +31,7 @@ container_quarkus_native_image=quarkus-native/todo
 container_cpu_limit=4
 container_memory_limit=512M
 
+psql_db_host=localhost
 psql_db_name=todo-db
 psql_db_user=todo
 psql_db_password=todo
@@ -44,16 +45,7 @@ if [ "$(uname)" == "Darwin" ]; then
   psql_db_host=${container_db_name}
 fi
 
-if [ $# -eq 1 ]
-  then
-    psql_db_host=$1
-    network_config="--network=${container_network_name}"
-    lab=true
-else
-    psql_db_host=localhost
-    network_config="--network=${container_network_name} -p 5432:5432"
-    lab=false
-fi
+
 
 ############
 ## Functions
@@ -66,7 +58,13 @@ function run_database_script {
 
 function create_database_container {
   printf "Starting PostgreSQL with name ${container_db_name} "
-  ${container_runtime} run --ulimit memlock=-1:-1 -d --rm=true ${network_config} --memory-swappiness=0 --name ${container_db_name} -e POSTGRES_USER=${psql_db_user} -e POSTGRES_PASSWORD=${psql_db_password} -e POSTGRES_DB=${psql_db_name} postgres:10.5 > /dev/null
+  ${container_runtime} run --ulimit memlock=-1:-1 -d --rm=true -p 5432:5432 \
+        --network=${container_network_name} \
+        --memory-swappiness=0 \
+        --name ${container_db_name} \
+        -e POSTGRES_USER=${psql_db_user} \
+        -e POSTGRES_PASSWORD=${psql_db_password} \
+        -e POSTGRES_DB=${psql_db_name} postgres:10.5 > /dev/null
   # Waiting for the database to start
   while ! (${container_runtime} exec -it ${container_db_name} psql -U ${psql_db_user} ${psql_db_name} -c "select 1" > /dev/null 2>&1)
   do
@@ -96,11 +94,14 @@ function create_container {
  
   printf "Starting ${image} container using port ${port} "
 
-  if [ "$lab" = true ] ; then
-    ${container_runtime} run -d --rm --cpus=${container_cpu_limit} --memory=${container_memory_limit} --network=host --name=${name} ${env} ${image} > /dev/null
-  else
-    ${container_runtime} run -d --rm --cpus=${container_cpu_limit} --memory=${container_memory_limit} -p ${port}:${port} --network=${container_network_name} --name=${name} ${env} ${image} > /dev/null
-  fi
+  ${container_runtime} run -d --rm \
+          --cpus=${container_cpu_limit} \
+          --memory=${container_memory_limit} \
+          -p ${port}:${port} \
+          --network=${container_network_name} \
+          --name=${name} \
+          ${env} \
+          ${image} > /dev/null
 
   while ! (curl -sf http://localhost:${port}/api > /dev/null)
   do
@@ -118,10 +119,9 @@ printf "Creating network for containers "
 ${container_runtime} network create ${container_network_name} > /dev/null 2>&1 || true
 echo "[DONE]"
 
-if [ "$lab" != true ] ; then
-  create_database_container   ${container_db_name}
-  prepopulate_database        ${container_db_name}
-fi
+
+create_database_container   ${container_db_name}
+prepopulate_database        ${container_db_name}
 
 # Starting the cloud native runtime and wait for first response
 create_container ${container_spring_name} ${container_spring_image} ${container_spring_port} -e SPRING_HTTP_PORT=${container_spring_port} -e SPRING_DATASOURCE_URL=jdbc:postgresql://${psql_db_host}/${psql_db_name}

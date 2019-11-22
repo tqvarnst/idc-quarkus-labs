@@ -103,7 +103,7 @@ function create_postgresql_in_project {
   oc new-app -e POSTGRESQL_USER=todo -e POSTGRESQL_PASSWORD=todo -e POSTGRESQL_DATABASE=todo-db postgresql -e POSTGRESQL_MAX_CONNECTIONS=400 -n $1 >/dev/null
 }
 
-function start-todo-app {
+function start_todo_app {
   local namespace=$1
   shift
   local env="$*"
@@ -116,7 +116,7 @@ function start-todo-app {
   
 }
 
-fuction scale-todo-app {
+function scale_todo_app {
   local namespace=$1
   local size=$2
   oc scale --replicas=${size} dc todo -n ${namespace} > /dev/null
@@ -156,13 +156,13 @@ tag_and_upload_image ${spring_local_image_name} "${REGISTRY_ROUTE}/${spring_pod_
 tag_and_upload_image ${quarkus_jvm_local_image_name} "${REGISTRY_ROUTE}/${quarkus_jvm_pod_image}"
 tag_and_upload_image ${quarkus_native_local_image_name} "${REGISTRY_ROUTE}/${quarkus_native_pod_image}"
 
-start-todo-app ${spring_project} -e SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql/todo-db -e SPRING_HTTP_PORT=8080
-start-todo-app ${quarkus_jvm_project} -e QUARKUS_DATASOURCE_URL=jdbc:postgresql://postgresql/todo-db -e QUARKUS_HTTP_PORT=8080
-start-todo-app ${quarkus_native_project} -e QUARKUS_DATASOURCE_URL=jdbc:postgresql://postgresql/todo-db -e QUARKUS_HTTP_PORT=8080
+start_todo_app ${spring_project} -e SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql/todo-db -e SPRING_HTTP_PORT=8080
+start_todo_app ${quarkus_jvm_project} -e QUARKUS_DATASOURCE_URL=jdbc:postgresql://postgresql/todo-db -e QUARKUS_HTTP_PORT=8080
+start_todo_app ${quarkus_native_project} -e QUARKUS_DATASOURCE_URL=jdbc:postgresql://postgresql/todo-db -e QUARKUS_HTTP_PORT=8080
 
-scale-todo-app ${spring_project} 10
-scale-todo-app ${quarkus_jvm_project} 10
-scale-todo-app ${quarkus_native_project} 10
+scale_todo_app ${spring_project} 10
+scale_todo_app ${quarkus_jvm_project} 10
+scale_todo_app ${quarkus_native_project} 10
 
 
 
