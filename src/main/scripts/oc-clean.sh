@@ -27,6 +27,8 @@ quarkus_native_local_image_name=quarkus-native/todo
 quarkus_native_pod_name=quarkus-native
 quarkus_native_pod_image=${quarkus_native_project}/todo
 
+go_project=go
+
 
 project_cpu_limit=8
 project_mem_limit=2Gi
@@ -79,6 +81,7 @@ check_admin
 delete_project ${spring_project}
 delete_project ${quarkus_jvm_project}
 delete_project ${quarkus_native_project}
+delete_project ${go_project}
 
 
 

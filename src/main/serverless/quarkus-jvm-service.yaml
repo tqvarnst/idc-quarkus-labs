@@ -1,0 +1,14 @@
+apiVersion: serving.knative.dev/v1alpha1
+kind: Service
+metadata:
+  name: todo
+spec:
+  template:
+    spec:
+      containers:
+        - image: todo:latest
+          env:
+            - name: QUARKUS_DATASOURCE_URL
+              value: "jdbc:postgresql://postgresql/todo-db"
+            - name: QUARKUS_HTTP_PORT
+              value: "8080"

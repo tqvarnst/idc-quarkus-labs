@@ -22,6 +22,9 @@ quarkus-jvm:
 quarkus-native:
 	@$(MAKE) -C quarkus-todo build-native
 
+go:
+	@$(MAKE) -C hello-go build
+
 run: stop
 	./src/main/scripts/run.sh
 
@@ -44,6 +47,9 @@ oc-setup:
 
 oc-clean: 
 	src/main/scripts/oc-clean.sh
+
+serverless-setup:
+	src/main/scripts/oc-serverless-setup.sh
 
 rsync:
 	git ls-files --exclude-standard -oi --directory > .rsync_ignore
