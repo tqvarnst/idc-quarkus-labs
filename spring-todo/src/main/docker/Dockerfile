@@ -14,7 +14,7 @@
 # docker run -i --rm -p 8080:8080 --cpus=1 --memory=1G --name=spring spring/hello
 #
 ###
-FROM fabric8/java-alpine-openjdk8-jre
+FROM fabric8/java-alpine-openjdk11-jre
 ENV JAVA_OPTIONS="-Xmx64m -Djava.security.egd=file:/dev/./urandom"
 ENV AB_OFF=true
 COPY target/todo.jar /deployments/app.jar
