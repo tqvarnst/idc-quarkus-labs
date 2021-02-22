@@ -15,10 +15,10 @@ build: build-jvm build-native
 build-jvm: build-jvm-$(os)
 
 build-jvm-mac: target/todo-runner.jar
-	docker build -q -f src/main/docker/Dockerfile.jvm -t quarkus-jvm/todo .
+	docker build -q -f src/main/docker/Dockerfile.fast-jar -t quarkus-jvm/todo .
 
 build-jvm-linux: target/todo-runner.jar
-	podman build -q -f src/main/docker/Dockerfile.jvm -t quarkus-jvm/todo .
+	podman build -q -f src/main/docker/Dockerfile.fast-jar -t quarkus-jvm/todo .
 
 target/todo-runner.jar: 
 	./mvnw package
