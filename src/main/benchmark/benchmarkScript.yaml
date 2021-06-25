@@ -124,61 +124,61 @@ scripts:
             - set-state: RUN.${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_TROUGHPUT
             - set-state:
                 key: VALUES
-                value: ${{VALUES}}<value metricComparator="HB" metricName="Throughput" result="${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_TROUGHPUT}}"><parameters><parameter name="DRIVER_THREADS" value="${{DRIVER_THREAD.count}}"/></parameters></value>
+                value: ${{VALUES}}<value metricComparator="HB" metricName="Throughput" result="${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_TROUGHPUT}}"><parameters><parameter name="Connections" value="${{DRIVER_THREAD.sharedConnections}}"/></parameters></value>
                 silent: true
             - sh: jq ' .total[] | select (.phase | contains("steadyState")) | .summary.invalid ' < ${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}/all.json
             - set-state: RUN.${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_INVALID
             - set-state:
                 key: VALUES
-                value: ${{VALUES}}<value metricComparator="LB" metricName="Invalid_count" result="${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_INVALID}}"><parameters><parameter name="DRIVER_THREADS" value="${{DRIVER_THREAD.count}}"/></parameters></value>
+                value: ${{VALUES}}<value metricComparator="LB" metricName="Invalid_count" result="${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_INVALID}}"><parameters><parameter name="Connections" value="${{DRIVER_THREAD.sharedConnections}}"/></parameters></value>
                 silent: true
             - sh: jq ' .total[] | select (.phase | contains("steadyState")) | .summary.resetCount ' < ${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}/all.json
             - set-state: RUN.${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_RESET_COUNT
             - set-state:
                 key: VALUES
-                value: ${{VALUES}}<value metricComparator="LB" metricName="Resets" result="${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_RESET_COUNT}}"><parameters><parameter name="DRIVER_THREADS" value="${{DRIVER_THREAD.count}}"/></parameters></value>
+                value: ${{VALUES}}<value metricComparator="LB" metricName="Resets" result="${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_RESET_COUNT}}"><parameters><parameter name="Connections" value="${{DRIVER_THREAD.sharedConnections}}"/></parameters></value>
                 silent: true
             - sh: jq ' .total[] | select (.phase | contains("steadyState")) | .summary.timeouts ' < ${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}/all.json
             - set-state: RUN.${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_TIMEOUTS
             - set-state:
                 key: VALUES
-                value: ${{VALUES}}<value metricComparator="LB" metricName="Timeouts" result="${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_TIMEOUTS}}"><parameters><parameter name="DRIVER_THREADS" value="${{DRIVER_THREAD.count}}"/></parameters></value>
+                value: ${{VALUES}}<value metricComparator="LB" metricName="Timeouts" result="${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_TIMEOUTS}}"><parameters><parameter name="Connections" value="${{DRIVER_THREAD.sharedConnections}}"/></parameters></value>
                 silent: true
             - sh: jq ' .total[] | select (.phase | contains("steadyState")) | .summary.blockedCount ' < ${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}/all.json
             - set-state: RUN.${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_BLOCKED_COUNT
             - set-state:
                 key: VALUES
-                value: ${{VALUES}}<value metricComparator="LB" metricName="Blocked_count" result="${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_BLOCKED_COUNT}}"><parameters><parameter name="DRIVER_THREADS" value="${{DRIVER_THREAD.count}}"/></parameters></value>
+                value: ${{VALUES}}<value metricComparator="LB" metricName="Blocked_count" result="${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_BLOCKED_COUNT}}"><parameters><parameter name="Connections" value="${{DRIVER_THREAD.sharedConnections}}"/></parameters></value>
                 silent: true
             - sh: jq ' .total[] | select (.phase | contains("steadyState")) | .summary.meanResponseTime / 1000000' < ${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}/all.json
             - set-state: RUN.${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_MEAN_RESPONSE
             - set-state:
                 key: VALUES
-                value: ${{VALUES}}<value metricComparator="LB" metricName="Response_time_mean" result="${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_MEAN_RESPONSE}}"><parameters><parameter name="DRIVER_THREADS" value="${{DRIVER_THREAD.count}}"/></parameters></value>
+                value: ${{VALUES}}<value metricComparator="LB" metricName="Response_time_mean" result="${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_MEAN_RESPONSE}}"><parameters><parameter name="Connections" value="${{DRIVER_THREAD.sharedConnections}}"/></parameters></value>
                 silent: true
             - sh: jq ' .total[] | select (.phase | contains("steadyState")) | .summary.percentileResponseTime."99.99" / 1000000 ' < ${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}/all.json
             - set-state: RUN.${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_99_99_RESPONSE
             - set-state:
                 key: VALUES
-                value: ${{VALUES}}<value metricComparator="LB" metricName="Response_time_9999" result="${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_99_99_RESPONSE}}"><parameters><parameter name="DRIVER_THREADS" value="${{DRIVER_THREAD.count}}"/></parameters></value>
+                value: ${{VALUES}}<value metricComparator="LB" metricName="Response_time_9999" result="${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_99_99_RESPONSE}}"><parameters><parameter name="Connections" value="${{DRIVER_THREAD.sharedConnections}}"/></parameters></value>
                 silent: true
             - sh: java -jar ${{IDC_LAB_BASE_DIR:/tmp}}/hyperfoilReportGenerator.jar -s ${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}} -d ${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}/index.html
             - signal: ${{TARGET.name}}-${{DRIVER_THREAD.count}}-RUN_DONE
             - wait-for: ${{TARGET.name}}-${{DRIVER_THREAD.count}}-STATS_DONE
             - set-state:
                 key: VALUES
-                value: ${{VALUES}}<value metricComparator="LB" metricName="RSS_mean" result="${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_MEAN_RSS}}"><parameters><parameter name="DRIVER_THREADS" value="${{DRIVER_THREAD.count}}"/></parameters></value>
+                value: ${{VALUES}}<value metricComparator="LB" metricName="RSS_mean" result="${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_MEAN_RSS}}"><parameters><parameter name="Connections" value="${{DRIVER_THREAD.sharedConnections}}"/></parameters></value>
                 silent: true
             - set-state:
                 key: VALUES
-                value: ${{VALUES}}<value metricComparator="LB" metricName="RSS_max" result="${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_MAX_RSS}}"><parameters><parameter name="DRIVER_THREADS" value="${{DRIVER_THREAD.count}}"/></parameters></value>
+                value: ${{VALUES}}<value metricComparator="LB" metricName="RSS_max" result="${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_MAX_RSS}}"><parameters><parameter name="Connections" value="${{DRIVER_THREAD.sharedConnections}}"/></parameters></value>
                 silent: true
             - sh: rq_sec=$(echo "scale=5; ${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_TROUGHPUT}} / ${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_RESULT_MAX_RSS}}" | bc -l); echo $rq_sec
               then:
                 - set-state: ${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_REQ_SEC_MB
             - set-state:
                 key: VALUES
-                value: ${{VALUES}}<value metricComparator="LB" metricName="Req_Sec_Mb" result="${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_REQ_SEC_MB}}"><parameters><parameter name="DRIVER_THREADS" value="${{DRIVER_THREAD.count}}"/></parameters></value>
+                value: ${{VALUES}}<value metricComparator="LB" metricName="Req_Sec_Mb" result="${{${{BENCHMARK_NAME}}_${{TARGET.name}}_${{DRIVER_THREAD.count}}_REQ_SEC_MB}}"><parameters><parameter name="Connections" value="${{DRIVER_THREAD.sharedConnections}}"/></parameters></value>
                 silent: true
         - sh: date +%FT%TZ
           then:
@@ -265,15 +265,15 @@ states:
   POD_RESTART_COMMAND: make stop run
 
   BENCHMARK_TEMPLATE: ${{BENCHMARK_NAME}}.template.json
-  RAMP_UP_DURATION: 1s
-  STEADY_STATE_DURATION: 30s
+  RAMP_UP_DURATION: 10s
+  STEADY_STATE_DURATION: 60s
   BENCHMARK_THINK_TIME: 100ms
 
   APP_SERVER: benchserver2G1
   HYPERFOIL_HOST: benchclient1
 
   TARGETS: [{name: "quarkus-jvm", port: 8081},{name: "quarkus-native", port: 8082}, {name: "spring-boot", port: 8080}]
-  DRIVER_THREADS: [{count: 2, sharedConnections: 100},{count: 4, sharedConnections: 200},{count: 6, sharedConnections: 300},{count: 8, sharedConnections: 400},{count: 10, sharedConnections: 600},{count: 12, sharedConnections: 600},{count: 14, sharedConnections: 700}]
+  DRIVER_THREADS: [{count: 2, sharedConnections: 8},{count: 4, sharedConnections: 16},{count: 6, sharedConnections: 24},{count: 8, sharedConnections: 32},{count: 10, sharedConnections: 40},{count: 12, sharedConnections: 48},{count: 14, sharedConnections: 56}]
 
   Xmx: 64mb
 
